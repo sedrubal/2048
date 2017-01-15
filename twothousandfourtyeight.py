@@ -81,7 +81,8 @@ class Game(object):
             list((
                 0 for _ in range(Game.SIZE)
             )) for _ in range(Game.SIZE)
-        ))  # the game numbers are stored here:
+        ))  # the game numbers are stored here
+        self.moves = 0
         self.scr = curses.initscr()
         curses.start_color()
         self.area_pad = curses.newpad(
@@ -96,7 +97,10 @@ class Game(object):
 
     def start(self):
         """Start a Game"""
+        self.place_number()
+        self.place_number()
         self.render()
+
         while True:
             c = self.scr.getch()
             if c in [ord('q'), ascii.ESC]:
@@ -114,6 +118,9 @@ class Game(object):
         self.scr.addstr(
             0, 0, "Just another 2048 game".center(self.scr.getmaxyx()[1]),
             curses.A_BOLD+curses.A_UNDERLINE
+        )
+        self.scr.addstr(
+            1, 0, "Moves: %i" % self.moves, curses.A_BOLD
         )
         for y, row in enumerate(self.area):
             for x, v in enumerate(row):
@@ -185,6 +192,7 @@ class Game(object):
 
     def move(self, direction):
         """Make a move in direction."""
+        self.moves += 1
 
         area = Game._transform(self.area, direction)
         Game._move_left(area)
