@@ -75,18 +75,6 @@ class Game(object):
         4096: curses.COLOR_BLACK,
         8192: curses.COLOR_BLACK,
     }
-    DEFAULT_KEYBOARD_MAPPING = {
-        'q': 'quit',
-        ascii.ESC: 'quit',
-        'h': 'left',
-        curses.KEY_LEFT: 'left',
-        'j': 'down',
-        curses.KEY_DOWN: 'down',
-        'k': 'up',
-        curses.KEY_UP: 'up',
-        'l': 'right',
-        curses.KEY_RIGHT: 'right',
-    }
 
     def __init__(self):
         self.area = list((
@@ -106,60 +94,21 @@ class Game(object):
             3, Game.SCR_FIELD_SIZE + 2,
         )
 
-        # Keyboard Mapping
-        class InvalidAction(object):
-            """Warn a invalid keyboard binding."""
-            def __init__(self, action_name):
-                self.action_name = action_name
-
-            def __call__(self, key):
-                print(
-                    "Invalid action for key %i: %s not found"
-                    % (key, self.action_name),
-                )
-
-        self.keyboard_mapping = {}
-        for key, action in Game.DEFAULT_KEYBOARD_MAPPING.items():
-            self.keyboard_mapping[ord(key) if isinstance(key, str) else key] = getattr(
-                self, action, InvalidAction(action)
-            )
-
     def start(self):
         """Start a Game"""
         self.render()
         while True:
             c = self.scr.getch()
-            self.keyboard_mapping.get(c, callable)(c)
-
-    @staticmethod
-    def draw_table(screen, y_pos, x_pos, height, width, cell_height, cell_width):
-        """Draw a table to the screen."""
-        screen.addstr(
-            y_pos, x_pos,
-            '┌%s┐' % ('┬').join(['─' * (cell_width-2)]*width),
-        )
-        screen.addstr(
-            y_pos + height * (cell_height-1), x_pos,
-            '└%s┘' % ('┴').join(['─' * (cell_width-2)]*width),
-        )
-        for x in range(width+1):
-            for sy in range(1, cell_height-1):
-                screen.addstr(
-                    y_pos + sy, x_pos + x*(cell_width-1),
-                    '│',
-                )
-
-        for y in range(1, height):
-            screen.addstr(
-                y_pos + y*(cell_height-1), x_pos,
-                '├%s┤' % ('┼').join(['─' * (cell_width-2)]*width),
-            )
-            for x in range(width+1):
-                for sy in range(1, cell_height-1):
-                    screen.addstr(
-                        y_pos + y*(cell_height-1) + sy, x_pos + x*(cell_width-1),
-                        '│',
-                    )
+            if c in [ord('q'), ascii.ESC]:
+                self.quit()
+            elif c in [ord('h'), curses.KEY_LEFT]:
+                self.move('left')
+            elif c in [ord('j'), curses.KEY_DOWN]:
+                self.move('down')
+            elif c in [ord('k'), curses.KEY_UP]:
+                self.move('up')
+            elif c in [ord('l'), curses.KEY_RIGHT]:
+                self.move('right')
 
     def render(self):
         self.scr.addstr(
@@ -251,19 +200,7 @@ class Game(object):
             print("You Lost!!!")
             self.quit()
 
-    def left(self, _=None):
-        self.move('left')
-
-    def down(self, _=None):
-        self.move('down')
-
-    def up(self, _=None):
-        self.move('up')
-
-    def right(self, _=None):
-        self.move('right')
-
-    def quit(self, _=None):
+    def quit(self):
         """Quit the Game."""
         exit(0)
 
