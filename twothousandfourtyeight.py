@@ -5,6 +5,7 @@
 
 import time
 import random
+from copy import deepcopy
 import curses
 from curses import ascii
 from curses.textpad import rectangle
@@ -83,6 +84,9 @@ class Game(object):
             )) for _ in range(Game.SIZE)
         ))  # the game numbers are stored here
         self.moves = 0
+        self.moved = True  # False if key was pressed but field didn't change
+        self.score = 0
+        self.delta_score = 0  # Score added in current round
         self.scr = curses.initscr()
         curses.start_color()
         self.area_pad = curses.newpad(
@@ -120,7 +124,17 @@ class Game(object):
             curses.A_BOLD+curses.A_UNDERLINE
         )
         self.scr.addstr(
-            1, 0, "Moves: %i" % self.moves, curses.A_BOLD
+            1, 0, "Moves: %i %c" % (self.moves, ' ' if self.moved else '!'),
+            curses.A_BOLD
+        )
+        self.scr.addstr(
+            2, 0, (
+                "Score: %i %s" % (
+                    self.score, '(+%i)' % self.delta_score
+                    if self.delta_score else ''
+                )
+            ).ljust(self.scr.getmaxyx()[1]),
+            curses.A_BOLD
         )
         for y, row in enumerate(self.area):
             for x, v in enumerate(row):
@@ -161,7 +175,8 @@ class Game(object):
 
     @staticmethod
     def _move_left(area):
-        """Do a left move."""
+        """Do a left move. Return the delta score."""
+        score = 0
         for row in area:
             move_ptr = -1  # last occupied field, move to one next to it
             merge_ptr = -1  # last occupied field, candidate to merge with
@@ -172,6 +187,7 @@ class Game(object):
                 if merge_ptr >= 0 and row[merge_ptr] == v:
                     # merge
                     row[merge_ptr] += v
+                    score += row[merge_ptr]
                     row[i] = 0
                     merge_ptr += 1
                 else:
@@ -181,11 +197,14 @@ class Game(object):
                     row[i] = 0
                     row[move_ptr] = v
 
+        return score
+
     @staticmethod
     def _transform(area, direction):
-        """Transform to make a simple left move."""
+        """Transform area to make a simple left move.
+        Return a transformed copy of area."""
         if direction == 'left':
-            return area
+            return deepcopy(area)
         elif direction == 'right':
             return y_mirrored(area)
         elif direction == 'up':
@@ -195,11 +214,21 @@ class Game(object):
 
     def move(self, direction):
         """Make a move in direction."""
-        self.moves += 1
 
         area = Game._transform(self.area, direction)
-        Game._move_left(area)
-        self.area = Game._transform(area, direction)
+        self.delta_score = Game._move_left(area)
+        new_area = Game._transform(area, direction)
+
+        if not self.delta_score and new_area == self.area:
+            # nothing changed (delta_score: speed up condition)
+            self.moved = False
+            self.render()
+            return
+
+        self.moved = True
+        self.score += self.delta_score
+        self.area = new_area
+        self.moves += 1
 
         if not self.is_lost():
             self.place_number()
