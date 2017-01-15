@@ -23,6 +23,36 @@ def y_mirrored(matrix):
     ]
 
 
+def curses_draw_table(screen, y_pos, x_pos, height, width, cell_height, cell_width):
+    """Draw a table to the screen."""
+    screen.addstr(
+        y_pos, x_pos,
+        '┌%s┐' % ('┬').join(['─' * (cell_width-2)]*width),
+    )
+    screen.addstr(
+        y_pos + height * (cell_height-1), x_pos,
+        '└%s┘' % ('┴').join(['─' * (cell_width-2)]*width),
+    )
+    for x in range(width+1):
+        for sy in range(1, cell_height-1):
+            screen.addstr(
+                y_pos + sy, x_pos + x*(cell_width-1),
+                '│',
+            )
+
+    for y in range(1, height):
+        screen.addstr(
+            y_pos + y*(cell_height-1), x_pos,
+            '├%s┤' % ('┼').join(['─' * (cell_width-2)]*width),
+        )
+        for x in range(width+1):
+            for sy in range(1, cell_height-1):
+                screen.addstr(
+                    y_pos + y*(cell_height-1) + sy, x_pos + x*(cell_width-1),
+                    '│',
+                )
+
+
 class Game(object):
     """A 2048 game"""
 
@@ -70,7 +100,7 @@ class Game(object):
             1 + 2 * Game.SIZE,
             1 + (Game.SCR_FIELD_SIZE+1) * Game.SIZE + 1,  # +1 bug??
         )
-        Game.draw_table(
+        curses_draw_table(
             self.area_pad, 0, 0,
             Game.SIZE, Game.SIZE,
             3, Game.SCR_FIELD_SIZE + 2,
