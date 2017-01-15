@@ -163,20 +163,23 @@ class Game(object):
     def _move_left(area):
         """Do a left move."""
         for row in area:
-            ptr = -1
+            move_ptr = -1  # last occupied field, move to one next to it
+            merge_ptr = -1  # last occupied field, candidate to merge with
             for i, v in enumerate(row):
                 if not v:
                     continue
 
-                if ptr >= 0 and row[ptr] == v:
+                if merge_ptr >= 0 and row[merge_ptr] == v:
                     # merge
-                    row[ptr] += v
+                    row[merge_ptr] += v
                     row[i] = 0
+                    merge_ptr += 1
                 else:
                     # move
-                    ptr += 1
+                    move_ptr += 1
+                    merge_ptr = move_ptr
                     row[i] = 0
-                    row[ptr] = v
+                    row[move_ptr] = v
 
     @staticmethod
     def _transform(area, direction):
@@ -188,7 +191,7 @@ class Game(object):
         elif direction == 'up':
             return transposed(area)
         elif direction == 'down':
-            return transposed(y_mirrored(area))
+            return transposed(y_mirrored(area)[::-1])
 
     def move(self, direction):
         """Make a move in direction."""
