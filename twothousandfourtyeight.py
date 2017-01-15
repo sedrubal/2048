@@ -88,6 +88,7 @@ class Game(object):
         self.score = 0
         self.delta_score = 0  # Score added in current round
         self.scr = curses.initscr()
+        curses.curs_set(False)
         curses.start_color()
         self.area_pad = curses.newpad(
             1 + 2 * Game.SIZE,
@@ -108,7 +109,7 @@ class Game(object):
         while True:
             c = self.scr.getch()
             if c in [ord('q'), ascii.ESC]:
-                self.quit()
+                self.quit("Bye")
             elif c in [ord('h'), curses.KEY_LEFT]:
                 self.move('left')
             elif c in [ord('j'), curses.KEY_DOWN]:
@@ -124,11 +125,11 @@ class Game(object):
             curses.A_BOLD+curses.A_UNDERLINE
         )
         self.scr.addstr(
-            1, 0, "Moves: %i %c" % (self.moves, ' ' if self.moved else '!'),
+            2, 0, "Moves: %i %c" % (self.moves, ' ' if self.moved else '!'),
             curses.A_BOLD
         )
         self.scr.addstr(
-            2, 0, (
+            3, 0, (
                 "Score: %i %s" % (
                     self.score, '(+%i)' % self.delta_score
                     if self.delta_score else ''
@@ -170,6 +171,8 @@ class Game(object):
                 for v in row:
                     if v == 0 or v == old_v:
                         return False  # there is a chance
+
+                    old_v = v
 
         return True  # lost
 
@@ -235,13 +238,18 @@ class Game(object):
             self.render()
 
         if self.is_lost():
-            time.sleep(1)
-            curses.endwin()
-            print("You Lost!!!")
-            self.quit()
+            self.it_is_lost = True
+            self.scr.addstr(
+                4, 0, "You Lost!!! Press q to exit.".center(self.scr.getmaxyx()[1]),
+                curses.A_BOLD
+            )
+            self.render()
 
-    def quit(self):
+    def quit(self, message="You Lost!!!"):
         """Quit the Game."""
+        curses.endwin()
+        print(message)
+        print("Your score was %s" % self.score)
         exit(0)
 
 
