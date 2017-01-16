@@ -3,7 +3,6 @@
 
 """Just another 2048 ncurses game."""
 
-import time
 import random
 from copy import deepcopy
 import curses
@@ -58,24 +57,36 @@ class Game(object):
     """A 2048 game"""
 
     SIZE = 4
-    MAX = 16276
-    SCR_FIELD_SIZE = len(str(MAX)) + 2
-    COLORS = {
-        0: curses.COLOR_WHITE,
-        2: curses.COLOR_WHITE,
-        4: curses.COLOR_CYAN,
-        8: curses.COLOR_CYAN,
-        16: curses.COLOR_MAGENTA,
-        32: curses.COLOR_MAGENTA,
-        64: curses.COLOR_YELLOW,
-        128: curses.COLOR_YELLOW,
-        256: curses.COLOR_GREEN,
-        512: curses.COLOR_GREEN,
-        1024: curses.COLOR_RED,
-        2048: curses.COLOR_RED,
-        4096: curses.COLOR_BLACK,
-        8192: curses.COLOR_BLACK,
+    MAX_POT = 17  # 2**17 is the max possible number(?)
+    SCR_FIELD_SIZE = len(str(2**MAX_POT)) + 2
+    COLOR_THEME = [
+        # (foreground, background)
+        (curses.COLOR_WHITE, curses.COLOR_BLACK),  # 2
+        (curses.COLOR_YELLOW, curses.COLOR_BLACK),  # 4
+        (curses.COLOR_RED, curses.COLOR_BLACK),  # 8
+        (curses.COLOR_MAGENTA, curses.COLOR_BLACK),  # 16
+        (curses.COLOR_BLUE, curses.COLOR_BLACK),  # 32
+        (curses.COLOR_CYAN, curses.COLOR_BLACK),  # 64
+        (curses.COLOR_GREEN, curses.COLOR_BLACK),  # 128
+        (curses.COLOR_YELLOW, curses.COLOR_WHITE),  # 512
+        (curses.COLOR_RED, curses.COLOR_WHITE),  # 1024
+        (curses.COLOR_MAGENTA, curses.COLOR_WHITE),  # 2048
+        (curses.COLOR_BLUE, curses.COLOR_WHITE),  # 4069
+        (curses.COLOR_CYAN, curses.COLOR_WHITE),  # 8192
+        (curses.COLOR_GREEN, curses.COLOR_WHITE),  # 2**14
+        (curses.COLOR_WHITE, curses.COLOR_YELLOW),  # 2**15
+        (curses.COLOR_RED, curses.COLOR_YELLOW),  # 2**16
+        (curses.COLOR_MAGENTA, curses.COLOR_YELLOW),  # 2**17
+        (curses.COLOR_BLUE, curses.COLOR_YELLOW),  # 2**18
+        (curses.COLOR_CYAN, curses.COLOR_YELLOW),  # 2**19
+        (curses.COLOR_GREEN, curses.COLOR_YELLOW),  # 2**20
+    ]
+    # A lookup table (quite similar to log2) to make it easier
+    # to get the right color
+    _LOG2 = {
+        2**x: x for x in range(MAX_POT+1)
     }
+    _LOG2[0] = 0
 
     def __init__(self):
         self.area = list((
@@ -88,8 +99,11 @@ class Game(object):
         self.score = 0
         self.delta_score = 0  # Score added in current round
         self.scr = curses.initscr()
-        curses.curs_set(False)
         curses.start_color()
+        for i, color_pair in enumerate(Game.COLOR_THEME):
+            curses.init_pair(1 + i, *color_pair)
+
+        curses.curs_set(False)
         self.area_pad = curses.newpad(
             1 + 2 * Game.SIZE,
             1 + (Game.SCR_FIELD_SIZE+1) * Game.SIZE + 1,  # +1 bug??
@@ -141,8 +155,8 @@ class Game(object):
             for x, v in enumerate(row):
                 self.area_pad.addstr(
                     1 + 2 * y, 1 + (Game.SCR_FIELD_SIZE+1) * x,
-                    str(v if v else '').center(Game.SCR_FIELD_SIZE-2),
-                    Game.COLORS[v]
+                    str(v if v else '').center(Game.SCR_FIELD_SIZE),
+                    curses.color_pair(Game._LOG2[v])
                 )
 
         self.area_pad.refresh(
